@@ -159,10 +159,18 @@ Contributions are welcome. To get started:
 
 ---
 
+## 🔏 Code Signing
+
+WinForge is code signed for free thanks to the [SignPath Foundation](https://signpath.org), which provides certificates to trusted open source projects.
+
+---
+
+---
+
 ## License
 
 This project is open-source and available under the [MIT License](LICENSE).
-WinForge is code signed for free thanks to the [SignPath Foundation](https://signpath.org), which provides certificates to trusted open source projects.
+
 ---
 
 <div align="center">
