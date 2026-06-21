@@ -1,0 +1,58 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "build": {
+    "beforeDevCommand": "npm run dev-frontend",
+    "beforeBuildCommand": "",
+    "devPath": "http://localhost:5173",
+    "distDir": "../src",
+    "withGlobalTauri": true
+  },
+  "package": {
+    "productName": "WinForge",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "shell": {
+        "execute": true,
+        "sidecar": false,
+        "scope": [
+          {
+            "name": "winget",
+            "cmd": "winget",
+            "args": true
+          },
+          {
+            "name": "powershell",
+            "cmd": "powershell",
+            "args": true
+          }
+        ]
+      },
+      "window": {
+        "all": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "dev.marineofps.pcsetup",
+      "icon": [
+        "icons/icon.ico"
+      ]
+    },
+    "windows": [
+      {
+        "label": "main",
+        "title": "WinForge",
+        "width": 900,
+        "height": 650,
+        "resizable": true,
+        "decorations": false,
+        "transparent": true,
+        "center": true,
+        "visible": false
+      }
+    ]
+  }
+}

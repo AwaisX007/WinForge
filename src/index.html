@@ -1,0 +1,2298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WinForge</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: rgba(8, 8, 10, 0.9);
+      --surface: rgba(18, 18, 22, 0.6);
+      --surface-hover: rgba(26, 26, 32, 0.75);
+      --surface-active: rgba(223, 183, 67, 0.08);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.12);
+      --accent: #dfb743;
+      --accent-glow: rgba(223, 183, 67, 0.25);
+      --accent-hover: #ead075;
+      --text: #f3f4f6;
+      --text-muted: #6b7280;
+      --text-dim: #9ca3af;
+      --success: #10b981;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    html, body {
+      background: transparent !important;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 100px rgba(223, 183, 67, 0.06);
+      transition: border-radius 0.2s, border-width 0.2s;
+    }
+
+    .app.maximized {
+      border-radius: 0;
+      border: none;
+    }
+
+    /* Top glow effect */
+    .app::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 70%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      z-index: 10;
+    }
+
+    /* Title bar */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      -webkit-app-region: drag;
+      cursor: move;
+      flex-shrink: 0;
+      background: rgba(0, 0, 0, 0.15);
+      z-index: 5;
+    }
+
+    .titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-icon {
+      width: 26px;
+      height: 26px;
+      background: linear-gradient(135deg, var(--accent), #f3cd5c);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .app-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      max-width: 480px;
+    }
+
+    .titlebar-controls {
+      display: flex;
+      gap: 8px;
+      -webkit-app-region: no-drag;
+    }
+
+    .titlebar-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-dim);
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .titlebar-btn:active {
+      transform: scale(0.92);
+    }
+
+    .titlebar-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--border-hover);
+      color: var(--text);
+    }
+    .titlebar-btn.close:hover {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: var(--error);
+    }
+
+    /* Admin Warning Banner */
+    .admin-banner {
+      background: rgba(245, 158, 11, 0.08);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      font-size: 12px;
+      padding: 8px 24px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      animation: fadeIn 0.3s ease;
+    }
+    .admin-banner.visible {
+      display: flex;
+    }
+    .admin-banner svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    /* Main layout */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 210px;
+      border-right: 1px solid var(--border);
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+      background: rgba(0, 0, 0, 0.05);
+      height: 100%;
+    }
+
+    .sidebar-presets {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+      flex: 1;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
+    }
+    .sidebar-presets::-webkit-scrollbar { width: 3px; }
+    .sidebar-presets::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 2px; }
+
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0 8px;
+      margin-bottom: 8px;
+    }
+
+    .preset-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      will-change: transform;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      width: 100%;
+    }
+    .preset-btn:active {
+      transform: scale(0.97);
+    }
+
+    .preset-btn:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+
+    .preset-btn.active {
+      background: var(--surface-active);
+      color: var(--text);
+      border-color: rgba(223, 183, 67, 0.25);
+      box-shadow: 0 0 10px rgba(223, 183, 67, 0.05);
+    }
+
+    .preset-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: color 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .preset-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    .spec-icon {
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .spec-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    .grid-category-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .grid-category-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    .sys-info-title-icon {
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .sys-info-title-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    .tip-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .tip-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    .install-btn-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .install-btn-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    .progress-svg {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+    .progress-svg.text-muted { color: var(--text-muted); }
+    .progress-svg.text-success { color: var(--success); }
+    .progress-svg.text-error { color: var(--error); }
+    .progress-svg.text-dim { color: var(--text-dim); }
+
+    .preset-count-pill {
+      margin-left: auto;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1px 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .preset-btn:hover .preset-count-pill {
+      color: var(--text-dim);
+      border-color: var(--border-hover);
+    }
+    .preset-btn.active .preset-count-pill {
+      background: rgba(223, 183, 67, 0.15);
+      border-color: rgba(223, 183, 67, 0.3);
+      color: var(--accent);
+    }
+
+    .grid-category-header {
+      grid-column: 1 / -1;
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 24px;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(223, 183, 67, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .app-grid > .grid-category-header:first-of-type {
+      margin-top: 0;
+    }
+
+    .sidebar-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 10px 8px;
+    }
+
+    /* Custom App Adder */
+    .custom-adder {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .custom-adder input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      color: var(--text);
+      font-size: 12px;
+      font-family: inherit;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .custom-adder input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(0, 0, 0, 0.35);
+    }
+    .custom-adder-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .custom-adder-btn:active {
+      transform: scale(0.97);
+    }
+    .custom-adder-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Content area */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Apps header */
+    .content-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .content-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Search bar */
+    .search-wrap {
+      position: relative;
+      width: 240px;
+    }
+    .search-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px 8px 32px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+      background: rgba(0, 0, 0, 0.35);
+    }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+    }
+    .search-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .select-all-btn {
+      font-size: 12px;
+      color: var(--accent);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      display: inline-block;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .select-all-btn:active {
+      transform: scale(0.97);
+    }
+    .select-all-btn:hover { color: var(--accent-hover); }
+
+    /* App grid */
+    .app-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 10px;
+      align-content: start;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+
+    .app-grid::-webkit-scrollbar { width: 5px; }
+    .app-grid::-webkit-scrollbar-track { background: transparent; }
+    .app-grid::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+    .app-grid::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+    @keyframes cardEntrance {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* App card - Double Bezel (Outer Shell) */
+    .app-card {
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 4px;
+      cursor: pointer;
+      position: relative;
+      will-change: transform;
+      animation: cardEntrance 0.6s cubic-bezier(0.32, 0.72, 0, 1) both;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .app-card-inner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border-radius: calc(var(--radius-lg) - 4px);
+      box-shadow: inset 0 1px 0px rgba(255, 255, 255, 0.04);
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      width: 100%;
+      height: 100%;
+    }
+
+    .app-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .app-card:hover .app-card-inner {
+      background: var(--surface-hover);
+      box-shadow: inset 0 1px 0px rgba(255, 255, 255, 0.08);
+    }
+
+    .app-card:active {
+      transform: scale(0.97) translateY(0);
+    }
+
+    .app-card.selected {
+      border-color: var(--accent);
+      background: rgba(223, 183, 67, 0.04);
+      box-shadow: 0 0 20px rgba(223, 183, 67, 0.08);
+    }
+
+    .app-card.selected .app-card-inner {
+      background: var(--surface-active);
+      box-shadow: inset 0 1px 0px rgba(223, 183, 67, 0.12);
+    }
+
+    .app-card.already-installed {
+      opacity: 1;
+      cursor: not-allowed;
+      border-color: rgba(223, 183, 67, 0.3);
+      background: rgba(223, 183, 67, 0.02);
+      box-shadow: 0 4px 15px rgba(223, 183, 67, 0.04);
+    }
+    .app-card.already-installed:hover {
+      transform: translateY(-1px);
+      border-color: rgba(223, 183, 67, 0.45);
+      box-shadow: 0 6px 20px rgba(223, 183, 67, 0.08);
+    }
+    .app-card.already-installed .app-card-inner {
+      background: rgba(18, 18, 22, 0.4);
+      box-shadow: inset 0 1px 0px rgba(223, 183, 67, 0.15);
+    }
+    .app-card.already-installed .app-name {
+      color: var(--accent);
+    }
+    .app-card.already-installed .app-icon-img {
+      filter: brightness(0) saturate(100%) invert(72%) sepia(34%) saturate(867%) hue-rotate(355deg) brightness(97%) contrast(92%);
+    }
+    .app-card.already-installed:hover .app-icon-img {
+      filter: brightness(0) saturate(100%) invert(72%) sepia(34%) saturate(867%) hue-rotate(355deg) brightness(97%) contrast(92%) drop-shadow(0 0 4px var(--accent-glow));
+    }
+
+    /* Applied Tweaks Style */
+    .app-card.already-applied {
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.02);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.04);
+    }
+    .app-card.already-applied:hover {
+      border-color: rgba(16, 185, 129, 0.5);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.08);
+      transform: translateY(-2px);
+    }
+    .app-card.already-applied .app-card-inner {
+      background: rgba(18, 18, 22, 0.45);
+      box-shadow: inset 0 1px 0px rgba(16, 185, 129, 0.15);
+    }
+    .app-card.already-applied .app-name {
+      color: var(--success);
+    }
+    .app-card.already-applied .app-icon-img {
+      filter: brightness(0) saturate(100%) invert(61%) sepia(34%) saturate(1243%) hue-rotate(118deg) brightness(97%) contrast(92%);
+    }
+    .app-card.already-applied:hover .app-icon-img {
+      filter: brightness(0) saturate(100%) invert(61%) sepia(34%) saturate(1243%) hue-rotate(118deg) brightness(97%) contrast(92%) drop-shadow(0 0 4px rgba(16, 185, 129, 0.3));
+    }
+
+    /* Revert Button Style */
+    .revert-btn {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .revert-btn:hover {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.6);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+      transform: scale(1.05);
+    }
+    .revert-btn:active {
+      transform: scale(0.95);
+    }
+
+    .app-icon-img {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      object-fit: contain;
+      filter: brightness(0) saturate(100%) invert(85%);
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    
+    .app-card:hover .app-icon-img {
+      filter: brightness(0) saturate(100%) invert(100%) drop-shadow(0 0 4px var(--accent-glow));
+    }
+
+    .app-card.selected .app-icon-img {
+      filter: brightness(0) saturate(100%) invert(72%) sepia(34%) saturate(867%) hue-rotate(355deg) brightness(97%) contrast(92%) drop-shadow(0 0 6px var(--accent-glow));
+    }
+
+    .app-info { flex: 1; min-width: 0; }
+
+    .app-name {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .app-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.3s;
+    }
+
+    .app-card:hover .app-desc {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+    }
+
+    .app-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      font-size: 10px;
+      color: transparent;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .app-card:hover .app-checkbox {
+      border-color: rgba(223, 183, 67, 0.45);
+      background: rgba(223, 183, 67, 0.04);
+    }
+
+    .app-card.selected .app-checkbox {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    /* Footer / install bar */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .selection-count {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .selection-count span {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .install-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+    .install-btn:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(223, 183, 67, 0.35);
+    }
+    .install-btn:active:not(:disabled) {
+      transform: scale(0.97);
+      box-shadow: 0 4px 12px var(--accent-glow); }
+    .install-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Progress overlay */
+    .progress-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 10, 12, 0.93);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 40px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .progress-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .progress-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .progress-subtitle {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    .progress-list {
+      width: 100%;
+      max-width: 520px;
+      max-height: 300px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+
+    .progress-list::-webkit-scrollbar { width: 4px; }
+    .progress-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 2px; }
+
+    .progress-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .progress-item-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .progress-detail {
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: 28px;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+
+    .progress-item.installing {
+      border-color: rgba(223, 183, 67, 0.3);
+      background: rgba(223, 183, 67, 0.03);
+    }
+    .progress-item.done {
+      border-color: rgba(16, 185, 129, 0.2);
+      background: rgba(16, 185, 129, 0.02);
+    }
+    .progress-item.error {
+      border-color: rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.03);
+    }
+    .progress-item.error .progress-detail {
+      color: rgba(239, 68, 68, 0.7);
+    }
+    .progress-item.skipped {
+      border-color: var(--border);
+      opacity: 0.65;
+    }
+
+    .progress-status {
+      font-size: 16px;
+      flex-shrink: 0;
+      width: 18px;
+      text-align: center;
+    }
+
+    .progress-bar-wrap {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .progress-bar-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #ead075);
+      border-radius: 3px;
+      transition: width 0.4s cubic-bezier(0.1, 0.8, 0.25, 1);
+      box-shadow: 0 0 10px var(--accent-glow);
+      width: 0%;
+    }
+
+    .progress-bar-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .done-btn {
+      padding: 12px 36px;
+      background: linear-gradient(135deg, var(--accent), #c5a059);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    .done-btn:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 6px 20px rgba(223, 183, 67, 0.4);
+    }
+    .done-btn.visible { display: inline-flex; }
+
+    /* Keyframes */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.95); }
+    }
+
+    .installing-pulse {
+      display: inline-block;
+      animation: pulse 1s infinite ease-in-out;
+    }
+
+    .checking-spin {
+      display: inline-block;
+      animation: rotate 1.5s infinite linear;
+    }
+
+    /* Developer Info Card - Double Bezel (Outer Shell) */
+    .developer-card {
+      background: rgba(223, 183, 67, 0.015);
+      border: 1px solid rgba(223, 183, 67, 0.08);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      margin: 12px 0;
+      will-change: transform;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .developer-card-inner {
+      background: rgba(223, 183, 67, 0.04);
+      border-radius: calc(var(--radius-md) - 4px);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: inset 0 1px 0px rgba(223, 183, 67, 0.05);
+    }
+    .developer-card-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .dev-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .dev-link {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .fresh-windows-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(223, 183, 67, 0.3);
+      background: rgba(223, 183, 67, 0.06);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      will-change: transform;
+      transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      margin-bottom: 8px;
+    }
+    .fresh-windows-btn:hover {
+      background: rgba(223, 183, 67, 0.12);
+      border-color: var(--accent);
+      color: var(--accent-hover);
+      box-shadow: 0 0 12px rgba(223, 183, 67, 0.15);
+    }
+    .fresh-windows-btn:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- Title bar -->
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <img src="assets/app-icon.png" style="width: 24px; height: 24px; border-radius: 6px; box-shadow: 0 0 10px var(--accent-glow);" alt="Logo" />
+      <span class="app-title">WinForge</span>
+    </div>
+    <div class="titlebar-controls">
+      <button class="titlebar-btn" onclick="minimize()">−</button>
+      <button class="titlebar-btn" id="maximize-btn" onclick="toggleMaximize()">▢</button>
+      <button class="titlebar-btn close" onclick="closeApp()">✕</button>
+    </div>
+  </div>
+
+  <!-- Admin Warning Banner -->
+  <div class="admin-banner" id="admin-banner">
+    <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: currentColor; flex-shrink: 0;">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+    </svg>
+    <span style="flex: 1;">Running without Administrator privileges. Silent installation of some packages may require UAC approval or fail.</span>
+    <button onclick="document.getElementById('admin-banner').classList.remove('visible')" style="background: none; border: none; color: inherit; font-size: 14px; cursor: pointer; font-weight: 600; padding: 0 4px; line-height: 1; display: flex; align-items: center; justify-content: center; opacity: 0.7; transition: opacity 0.2s; -webkit-app-region: no-drag;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">✕</button>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-presets">
+        <!-- Main Overview -->
+        <button class="preset-btn active" onclick="loadPreset('all')" id="preset-all">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="9"></rect>
+              <rect x="14" y="3" width="7" height="5"></rect>
+              <rect x="14" y="12" width="7" height="9"></rect>
+              <rect x="3" y="16" width="7" height="5"></rect>
+            </svg>
+          </span> All Items
+          <span class="preset-count-pill" id="count-all">0</span>
+        </button>
+
+        <button class="preset-btn" onclick="loadPreset('sysinfo')" id="preset-sysinfo">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </span> My PC Specs
+        </button>
+
+        <button class="preset-btn" onclick="loadPreset('installed')" id="preset-installed">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </span> Installed Apps
+          <span class="preset-count-pill" id="count-installed">0</span>
+        </button>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Fresh Windows 1-Click Preset -->
+        <button class="fresh-windows-btn" onclick="applyFreshWindowsPreset()" id="preset-fresh">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              <path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z"/>
+              <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z"/>
+            </svg>
+          </span> Fresh Windows Setup
+        </button>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Apps Category Group -->
+        <div class="sidebar-label">Apps</div>
+        <button class="preset-btn" onclick="loadPreset('dev')" id="preset-dev">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+          </span> Developer Tools
+          <span class="preset-count-pill" id="count-dev">0</span>
+        </button>
+        <button class="preset-btn" onclick="loadPreset('productivity')" id="preset-productivity">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+          </span> Productivity & Notes
+          <span class="preset-count-pill" id="count-productivity">0</span>
+        </button>
+        <button class="preset-btn" onclick="loadPreset('media')" id="preset-media">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12c0 2.2 1.8 4 4 4h1a2 2 0 0 1 2 2c0 2.2 1.8 4 4 4z"></path>
+              <circle cx="7.5" cy="10.5" r="1.5"></circle>
+              <circle cx="11.5" cy="7.5" r="1.5"></circle>
+              <circle cx="16.5" cy="9.5" r="1.5"></circle>
+            </svg>
+          </span> Creative & Media
+          <span class="preset-count-pill" id="count-media">0</span>
+        </button>
+        <button class="preset-btn" onclick="loadPreset('gaming')" id="preset-gaming">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="6" y1="12" x2="10" y2="12"></line>
+              <line x1="8" y1="10" x2="8" y2="14"></line>
+              <line x1="15" y1="13" x2="15.01" y2="13"></line>
+              <line x1="18" y1="11" x2="18.01" y2="11"></line>
+              <rect x="2" y="6" width="20" height="12" rx="3"></rect>
+            </svg>
+          </span> Gaming & Entertainment
+          <span class="preset-count-pill" id="count-gaming">0</span>
+        </button>
+        <button class="preset-btn" onclick="loadPreset('utility')" id="preset-utility">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+          </span> System Utilities
+          <span class="preset-count-pill" id="count-utility">0</span>
+        </button>
+        <button class="preset-btn" onclick="loadPreset('custom')" id="preset-custom">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+          </span> Custom Apps
+          <span class="preset-count-pill" id="count-custom">0</span>
+        </button>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Tweaks Category Group -->
+        <div class="sidebar-label">Tweaks</div>
+        <button class="preset-btn" onclick="loadPreset('optimize')" id="preset-optimize">
+          <span class="preset-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+          </span> System Optimizations
+          <span class="preset-count-pill" id="count-optimize">0</span>
+        </button>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <!-- Developer Info -->
+      <div class="developer-card">
+        <div class="developer-card-inner">
+          <div class="developer-card-title">Developed By</div>
+          <div class="dev-name">Syed Awais Shah (Marineo)</div>
+          <a class="dev-link" href="https://youtube.com/@LearnwithMarineo" target="_blank">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block; vertical-align: middle;"><path d="M23.498 6.163c-.272-.98-1.09-1.755-2.07-2.013C19.6 3.75 12 3.75 12 3.75s-7.6 0-9.428.4c-.98.258-1.797 1.033-2.07 2.013C.1 7.947.1 12 .1 12s0 4.053.402 5.837c.272.98 1.09 1.755 2.07 2.013C4.4 20.25 12 20.25 12 20.25s7.6 0 9.428-.4c.98-.258 1.797-1.033 2.07-2.013.402-1.784.402-5.837.402-5.837s0-4.053-.402-5.837zm-13.978 9.22V8.617L16.2 12l-6.68 3.383z"/></svg>
+            YouTube: @LearnwithMarineo
+          </a>
+          <a class="dev-link" href="mailto:shahawais35@gmail.com">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block; vertical-align: middle;"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+            shahawais35@gmail.com
+          </a>
+          <a class="dev-link" href="https://discord.com/invite/b3KebadbpA" target="_blank">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block; vertical-align: middle;"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.094 13.094 0 0 1-1.873-.894.077.077 0 0 1-.008-.128c.126-.093.252-.19.372-.287a.075.075 0 0 1 .077-.011c3.92 1.793 8.18 1.793 12.061 0a.073.073 0 0 1 .078.009c.12.099.246.195.373.289a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z"/></svg>
+            Discord Server
+          </a>
+        </div>
+      </div>
+
+      <!-- Custom App Adder -->
+      <div class="custom-adder">
+        <div class="sidebar-label" style="padding: 0; margin-bottom: 4px;">Add Custom Winget App</div>
+        <input type="text" id="custom-name-input" placeholder="Display Name (e.g. Slack)" />
+        <input type="text" id="custom-id-input" placeholder="Winget ID (e.g. Slack.Slack)" />
+        <button class="custom-adder-btn" onclick="addCustomApp()">
+          <span>+ Add to List</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="content-header">
+        <div class="content-title" id="content-title">All Apps</div>
+        <div class="header-actions">
+          <div class="search-wrap">
+            <span class="search-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <input type="text" class="search-input" id="search-input" placeholder="Search apps..." oninput="handleSearch(this.value)" />
+          </div>
+          <button class="select-all-btn" onclick="toggleSelectAll()">Select All</button>
+        </div>
+      </div>
+      <div class="app-grid" id="app-grid"></div>
+
+      <!-- System Specs View -->
+      <div class="sys-info-view" id="sys-info-view" style="display: none; flex: 1; padding: 24px; flex-direction: column; gap: 20px; overflow-y: auto;">
+        <div style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+          <span class="sys-info-title-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </span> Hardware Specifications & Configuration
+        </div>
+        
+        <div class="sys-info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; align-content: start;">
+          <!-- CPU Card -->
+          <div class="app-card" style="animation-delay: 0.02s;" id="card-cpu">
+            <div class="app-card-inner" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 18px 20px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="spec-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                    <rect x="9" y="9" width="6" height="6"></rect>
+                    <line x1="9" y1="1" x2="9" y2="4"></line>
+                    <line x1="15" y1="1" x2="15" y2="4"></line>
+                    <line x1="9" y1="20" x2="9" y2="23"></line>
+                    <line x1="15" y1="20" x2="15" y2="23"></line>
+                    <line x1="20" y1="9" x2="23" y2="9"></line>
+                    <line x1="20" y1="15" x2="23" y2="15"></line>
+                    <line x1="1" y1="9" x2="4" y2="9"></line>
+                    <line x1="1" y1="15" x2="4" y2="15"></line>
+                  </svg>
+                </span>
+                <div style="font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em;">PROCESSOR (CPU)</div>
+              </div>
+              <div id="sys-cpu" style="font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--text);">Loading...</div>
+            </div>
+          </div>
+
+          <!-- GPU Card -->
+          <div class="app-card" style="animation-delay: 0.04s;" id="card-gpu">
+            <div class="app-card-inner" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 18px 20px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="spec-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="5" width="20" height="12" rx="2"></rect>
+                    <path d="M6 17v2h2v-2M10 17v2h4v-2M16 17v2h2v-2"></path>
+                    <circle cx="12" cy="11" r="3"></circle>
+                    <path d="M12 8v6M9 11h6"></path>
+                  </svg>
+                </span>
+                <div style="font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em;">GRAPHICS CARD (GPU)</div>
+              </div>
+              <div id="sys-gpu" style="font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--text);">Loading...</div>
+            </div>
+          </div>
+
+          <!-- RAM Card -->
+          <div class="app-card" style="animation-delay: 0.06s;" id="card-ram">
+            <div class="app-card-inner" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 18px 20px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="spec-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="9" width="20" height="6" rx="1"></rect>
+                    <path d="M6 15v2h1v-2M9 15v2h1v-2M12 15v2h1v-2M15 15v2h1v-2M18 15v2h1v-2"></path>
+                    <rect x="4" y="10" width="2" height="3"></rect>
+                    <rect x="8" y="10" width="2" height="3"></rect>
+                    <rect x="12" y="10" width="2" height="3"></rect>
+                    <rect x="16" y="10" width="2" height="3"></rect>
+                  </svg>
+                </span>
+                <div style="font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em;">SYSTEM RAM</div>
+              </div>
+              <div id="sys-ram" style="font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--text);">Loading...</div>
+            </div>
+          </div>
+
+          <!-- Storage Card -->
+          <div class="app-card" style="animation-delay: 0.08s;" id="card-storage">
+            <div class="app-card-inner" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 18px 20px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="spec-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                    <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path>
+                  </svg>
+                </span>
+                <div style="font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em;">STORAGE DRIVES</div>
+              </div>
+              <div id="sys-storage" style="font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--text);">Loading...</div>
+            </div>
+          </div>
+
+          <!-- OS Card -->
+          <div class="app-card" style="animation-delay: 0.1s; grid-column: 1 / -1;" id="card-os">
+            <div class="app-card-inner" style="flex-direction: column; align-items: flex-start; gap: 10px; padding: 18px 20px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="spec-icon" style="color: var(--text);">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM10.8 1.95L24 0v11.55H10.8V1.95zM10.8 12.45H24v11.55l-13.2-1.95v-9.6z"/>
+                  </svg>
+                </span>
+                <div style="font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em;">OPERATING SYSTEM & SECURITY</div>
+              </div>
+              <div id="sys-os" style="font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--text);">Loading...</div>
+              <div id="sys-security" style="font-size: 12px; font-weight: 500; color: var(--text-dim); margin-top: 2px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span class="tip-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </span> Tip: Click any specification card above to refresh specs.
+        </div>
+      </div>
+      <div class="footer">
+        <div class="selection-count" id="selected-count">0 items selected</div>
+        <button class="install-btn" id="install-btn" onclick="startInstall()" disabled>
+          <span class="install-btn-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+          </span> Install
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Progress overlay -->
+  <div class="progress-overlay" id="progress-overlay">
+    <div>
+      <div class="progress-title">Installing your apps...</div>
+      <div class="progress-subtitle" id="progress-subtitle">Please keep this window open</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-label">
+        <span id="progress-label">Starting...</span>
+        <span id="progress-percent">0%</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+    </div>
+    <div class="progress-list" id="progress-list"></div>
+    <div style="display: flex; gap: 12px; margin-top: 10px;">
+      <button class="done-btn" id="copy-report-btn" onclick="copyReport()" style="background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border); display: none; align-items: center; gap: 8px; justify-content: center;">
+        <span style="width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          </svg>
+        </span>
+        Copy Report
+      </button>
+      <button class="done-btn" id="done-btn" onclick="resetApp()" style="align-items: center; gap: 8px; justify-content: center;">
+        <span style="width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </span>
+        All Done — Return
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  // Load Tauri APIs dynamically from global injected context (offline friendly)
+  const hasTauri = typeof window !== 'undefined' && window.__TAURI__ !== undefined;
+  
+  const invoke = hasTauri 
+    ? window.__TAURI__.tauri.invoke 
+    : async (cmd, args) => {
+        console.log(`[Mock Invoke] ${cmd}`, args);
+        if (cmd === 'is_admin') return false; // Mock not admin
+        return {};
+      };
+      
+  const listen = hasTauri 
+    ? window.__TAURI__.event.listen 
+    : async (evt, cb) => {
+        console.log(`[Mock Listen] ${evt}`);
+        return () => {};
+      };
+
+  // Make functions global
+  window.invoke = invoke;
+  window.listen = listen;
+
+  // App data
+  const APPS = [
+    // Dev
+    { id: 'Git.Git', name: 'Git', emoji: '🔀', desc: 'Version control', tags: ['dev'], category: 'dev' },
+    { id: 'Microsoft.VisualStudioCode', name: 'VS Code', emoji: '🧠', desc: 'Code editor', tags: ['dev', 'student', 'creator'], category: 'dev' },
+    { id: 'Python.Python.3.12', name: 'Python 3.12', emoji: '🐍', desc: 'Programming language', tags: ['dev', 'student'], category: 'dev' },
+    { id: 'OpenJS.NodeJS', name: 'Node.js', emoji: '🟩', desc: 'JS runtime', tags: ['dev'], category: 'dev' },
+    { id: 'Microsoft.WindowsTerminal', name: 'Windows Terminal', emoji: '🖥️', desc: 'Modern terminal', tags: ['dev'], category: 'dev' },
+    { id: 'GitHub.GitHubDesktop', name: 'GitHub Desktop', emoji: '🐙', desc: 'Git GUI client', tags: ['dev'], category: 'dev' },
+    { id: 'Rustlang.Rustup', name: 'Rust', emoji: '🦀', desc: 'Rust programming language & rustup toolchain', tags: ['dev'], category: 'dev' },
+    { id: 'Microsoft.WSL', name: 'WSL 2', emoji: '🐧', desc: 'Windows Subsystem for Linux 2', tags: ['dev'], category: 'dev' },
+    { id: 'Wireshark.Wireshark', name: 'Wireshark', emoji: '🦈', desc: 'Network protocol analyzer', tags: ['dev'], category: 'dev' },
+    { id: 'Neovim.Neovim', name: 'Neovim', emoji: '💤', desc: 'Vim-fork focused on extensibility and usability', tags: ['dev'], category: 'dev' },
+    { id: 'Postman.Postman', name: 'Postman', emoji: '🚀', desc: 'API collaboration and testing platform', tags: ['dev'], category: 'dev' },
+    { id: 'Docker.DockerDesktop', name: 'Docker Desktop', emoji: '🐳', desc: 'Container manager for app development', tags: ['dev'], category: 'dev' },
+    
+    // Student / Productivity
+    { id: 'Notion.Notion', name: 'Notion', emoji: '📝', desc: 'Notes & workspace', tags: ['student', 'creator'], category: 'productivity' },
+    { id: 'Notion.NotionCalendar', name: 'Notion Calendar', emoji: '📅', desc: 'Calendar integrated with Notion', tags: ['student', 'creator'], category: 'productivity' },
+    { id: 'Mozilla.Firefox', name: 'Firefox', emoji: '🦊', desc: 'Web browser', tags: ['student', 'dev'], category: 'productivity' },
+    { id: 'Google.Chrome', name: 'Chrome', emoji: '🌐', desc: 'Web browser', tags: ['student', 'gamer'], category: 'productivity' },
+    { id: 'Brave.Brave', name: 'Brave Browser', emoji: '🦁', desc: 'Privacy-focused web browser with ad-block', tags: ['student', 'dev', 'gamer'], category: 'productivity' },
+    { id: 'Slack.Slack', name: 'Slack', emoji: '💬', desc: 'Team communication & chat', tags: ['dev', 'student', 'creator'], category: 'productivity' },
+    { id: 'Obsidian.Obsidian', name: 'Obsidian', emoji: '💎', desc: 'Markdown note-taking & knowledge base', tags: ['student', 'creator', 'dev'], category: 'productivity' },
+    { id: '8Bit.Bitwarden', name: 'Bitwarden', emoji: '🔐', desc: 'Secure open-source password manager', tags: ['student', 'dev', 'gamer', 'creator'], category: 'productivity' },
+    
+    // Gaming & Entertainment
+    { id: 'Valve.Steam', name: 'Steam', emoji: '🎮', desc: 'Game platform', tags: ['gamer'], category: 'gaming' },
+    { id: 'Discord.Discord', name: 'Discord', emoji: '🎧', desc: 'Voice & chat', tags: ['gamer', 'creator', 'dev'], category: 'gaming' },
+    { id: 'EpicGames.EpicGamesLauncher', name: 'Epic Games', emoji: '🕹️', desc: 'Game launcher', tags: ['gamer'], category: 'gaming' },
+    { id: 'Nvidia.GeForceExperience', name: 'GeForce Experience', emoji: '🖱️', desc: 'GPU driver suite', tags: ['gamer'], category: 'gaming' },
+    { id: 'MSI.Afterburner', name: 'MSI Afterburner', emoji: '📊', desc: 'GPU monitoring & overclocking utility', tags: ['gamer'], category: 'gaming' },
+    { id: 'HWiNFO.HWiNFO', name: 'HWiNFO64', emoji: 'ℹ️', desc: 'Hardware analysis, monitoring & reporting', tags: ['gamer', 'dev'], category: 'gaming' },
+    { id: 'Playnite.Playnite', name: 'Playnite', emoji: '🎮', desc: 'Video game library manager & launcher', tags: ['gamer'], category: 'gaming' },
+    { id: 'Spotify.Spotify', name: 'Spotify', emoji: '🎶', desc: 'Music streaming', tags: ['student', 'gamer', 'creator'], category: 'gaming' },
+    
+    // Creator / Media
+    { id: 'VideoLAN.VLC', name: 'VLC', emoji: '🎵', desc: 'Media player', tags: ['creator', 'student', 'gamer'], category: 'media' },
+    { id: 'HandBrake.HandBrake', name: 'HandBrake', emoji: '🎬', desc: 'Video converter', tags: ['creator'], category: 'media' },
+    { id: 'OBSProject.OBSStudio', name: 'OBS Studio', emoji: '⏺️', desc: 'Screen recording', tags: ['creator', 'gamer'], category: 'media' },
+    { id: 'Figma.Figma', name: 'Figma', emoji: '🎨', desc: 'Design tool', tags: ['creator', 'dev'], category: 'media' },
+    { id: 'ShareX.ShareX', name: 'ShareX', emoji: '📸', desc: 'Screen capture, file sharing and productivity tool', tags: ['creator', 'dev'], category: 'media' },
+    
+    // Utilities
+    { id: '7zip.7zip', name: '7-Zip', emoji: '📦', desc: 'File archiver', tags: ['dev', 'student', 'creator'], category: 'utility' },
+    { id: 'Microsoft.PowerToys', name: 'PowerToys', emoji: '🔧', desc: 'Windows power tools', tags: ['dev', 'student'], category: 'utility' },
+    { id: 'CPUID.CPU-Z', name: 'CPU-Z', emoji: '💾', desc: 'Gathers information on system devices', tags: ['dev', 'gamer'], category: 'utility' },
+    { id: 'CrystalDewWorld.CrystalDiskInfo', name: 'CrystalDiskInfo', emoji: '💽', desc: 'HDD/SSD utility for monitoring health', tags: ['dev', 'gamer'], category: 'utility' },
+    { id: 'Voidtools.Everything', name: 'Everything', emoji: '🔍', desc: 'Locates files and folders by name instantly', tags: ['dev', 'student', 'creator', 'gamer'], category: 'utility' },
+    { id: 'JAMSoftware.TreeSizeFree', name: 'TreeSize Free', emoji: '🌳', desc: 'Finds space hogs and displays folder sizes', tags: ['dev', 'gamer'], category: 'utility' },
+    { id: 'Windhawk.Windhawk', name: 'Windhawk', emoji: '🦅', desc: 'Windows customization and tweaking tool', tags: ['utility'], category: 'utility' },
+    { id: 'Genymobile.scrcpy', name: 'Scrcpy', emoji: '📱', desc: 'Display and control Android devices over USB/TCP-IP', tags: ['utility'], category: 'utility' },
+    { id: 'LocalSend.LocalSend', name: 'LocalSend', emoji: '📡', desc: 'Open-source AirDrop alternative for local file sharing', tags: ['utility'], category: 'utility' },
+    
+    // Optimizations
+    { id: 'Opt.CleanTemp', name: 'Clean Temp Files', emoji: '🧹', desc: 'Clears user temp, system temp, and DNS cache', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.Debloat', name: 'Debloat Windows', emoji: '🗑️', desc: 'Removes pre-installed UWP bloatware (Xbox, Solitaire)', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.HighPerf', name: 'Ultimate Power Plan', emoji: '🚀', desc: 'Unlocks Ultimate / High Performance power plan', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.VisualEffects', name: 'UI Performance Tweaks', emoji: '🎨', desc: 'Optimizes menu speeds and window transitions', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.NetworkTweak', name: 'Network Latency Tweak', emoji: '🌐', desc: 'Optimizes TCP Auto-Tuning for better gaming ping', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.DisableStartup', name: 'Disable Startup Apps', emoji: '📴', desc: 'Disables OneDrive and Teams autostart on boot', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.DarkMode', name: 'System Dark Mode', emoji: '🌙', desc: 'Applies dark theme preference system-wide', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.Telemetry', name: 'Disable Telemetry', emoji: '🛡️', desc: 'Stops telemetry services and tracking telemetry', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.DefaultBrowserPrompt', name: 'Disable Edge Prompts', emoji: '🖥️', desc: 'Removes default browser prompts inside Edge', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.TrimSSD', name: 'TRIM SSD & Optimize', emoji: '💾', desc: 'Runs TRIM command on SSDs to maintain optimal write speeds', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.DisableHibernate', name: 'Disable Hibernation', emoji: '🛌', desc: 'Disables hibernate file (hiberfil.sys) to free up 8-32GB of space', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.ResetNetwork', name: 'Flush DNS & Reset Network', emoji: '⚡', desc: 'Flushes DNS cache and resets winsock to fix connection drops', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.DisableCortana', name: 'Disable Cortana & Web Search', emoji: '🔍', desc: 'Disables Cortana and stops Bing search from showing in Start menu', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.DisableGameDVR', name: 'Disable Game DVR & Overlay', emoji: '🎮', desc: 'Disables Xbox Game DVR background recording to increase FPS', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.CloudflareDns', name: 'Set Cloudflare DNS (1.1.1.1)', emoji: '📡', desc: 'Changes system DNS to Cloudflare (1.1.1.1) for faster browsing', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.DisableIndexing', name: 'Disable Windows Search Indexing', emoji: '🔍', desc: 'Disables search indexer to speed up older PCs & reduce disk usage', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.GodMode', name: 'Enable God Mode Folder', emoji: '🌟', desc: 'Creates desktop folder containing all control panel shortcuts', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.FlushDNS', name: 'Flush DNS Shortcut', emoji: '📡', desc: 'Creates a desktop shortcut to flush DNS cache with one click', tags: ['optimize'], category: 'optimize' },
+    { id: 'Opt.ScheduleCleanup', name: 'Schedule Daily Cleanup', emoji: '📅', desc: 'Schedules a daily silent temp cleanup & DNS flush task at 3 AM', tags: ['optimize'], category: 'optimize' }
+  ];
+  const CATEGORIES = {
+    optimize: { 
+      name: 'System Optimizations', 
+      svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>` 
+    },
+    dev: { 
+      name: 'Developer Tools', 
+      svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>` 
+    },
+    productivity: { 
+      name: 'Productivity & Notes', 
+      svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>` 
+    },
+    media: { 
+      name: 'Creative & Media', 
+      svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12c0 2.2 1.8 4 4 4h1a2 2 0 0 1 2 2c0 2.2 1.8 4 4 4z"></path><circle cx="7.5" cy="10.5" r="1.5"></circle><circle cx="11.5" cy="7.5" r="1.5"></circle><circle cx="16.5" cy="9.5" r="1.5"></circle></svg>` 
+    },
+    gaming: { 
+      name: 'Gaming & Entertainment', 
+      svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="10" y2="12"></line><line x1="8" y1="10" x2="8" y2="14"></line><line x1="15" y1="13" x2="15.01" y2="13"></line><line x1="18" y1="11" x2="18.01" y2="11"></line><rect x="2" y="6" width="20" height="12" rx="3"></rect></svg>` 
+    },
+    utility: { 
+      name: 'System Utilities', 
+      svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>` 
+    },
+    custom: { 
+      name: 'Custom Winget Apps', 
+      svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>` 
+    }
+  };
+
+  let selected = new Set();
+  let activePreset = 'all';
+  let searchQuery = '';
+
+  // LocalStorage Persistence for Custom Winget Apps
+  function loadCustomApps() {
+    const saved = localStorage.getItem('custom_winget_apps');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        parsed.forEach(app => {
+          if (!APPS.some(a => a.id.toLowerCase() === app.id.toLowerCase())) {
+            APPS.push(app);
+          }
+        });
+      } catch (e) {
+        console.error('Error loading custom apps', e);
+      }
+    }
+  }
+
+  function saveCustomApps() {
+    const customs = APPS.filter(a => a.tags.includes('custom'));
+    localStorage.setItem('custom_winget_apps', JSON.stringify(customs));
+  }
+
+  // Check admin rights on startup
+  async function checkAdmin() {
+    try {
+      const isAdmin = await invoke('is_admin');
+      if (!isAdmin) {
+        document.getElementById('admin-banner').classList.add('visible');
+      }
+    } catch (e) {
+      console.error('Failed to run admin check', e);
+    }
+  }
+
+  const REVERSIBLE_TWEAKS = new Set([
+    'Opt.Debloat', 'Opt.HighPerf', 'Opt.VisualEffects', 'Opt.NetworkTweak',
+    'Opt.DisableStartup', 'Opt.DarkMode', 'Opt.Telemetry', 'Opt.DefaultBrowserPrompt',
+    'Opt.DisableHibernate', 'Opt.DisableCortana', 'Opt.DisableGameDVR', 'Opt.CloudflareDns',
+    'Opt.DisableIndexing', 'Opt.GodMode', 'Opt.FlushDNS', 'Opt.ScheduleCleanup'
+  ]);
+
+  // Get filtered visible apps based on active category and search query
+  function getFilteredApps() {
+    return APPS.filter(app => {
+      let matchesCategory = false;
+      if (activePreset === 'all') {
+        matchesCategory = true;
+      } else if (activePreset === 'installed') {
+        matchesCategory = !app.id.startsWith('Opt.') && !!app.alreadyInstalled;
+      } else {
+        matchesCategory = app.category === activePreset;
+      }
+
+      const matchesSearch = app.name.toLowerCase().includes(searchQuery) ||
+                            app.desc.toLowerCase().includes(searchQuery) ||
+                            app.id.toLowerCase().includes(searchQuery);
+      return matchesCategory && matchesSearch;
+    });
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('app-grid');
+    grid.innerHTML = '';
+    
+    const filtered = getFilteredApps();
+    let animIndex = 0;
+
+    if (filtered.length === 0) {
+      const noResults = document.createElement('div');
+      noResults.style.gridColumn = '1 / -1';
+      noResults.style.textAlign = 'center';
+      noResults.style.padding = '40px 0';
+      noResults.style.color = 'var(--text-muted)';
+      noResults.style.fontSize = '14px';
+      noResults.textContent = searchQuery ? 'No apps found matching your search' : 'No apps in this category';
+      grid.appendChild(noResults);
+      return;
+    }
+
+    // Group apps by category
+    const grouped = {};
+    Object.keys(CATEGORIES).forEach(k => { grouped[k] = []; });
+
+    filtered.forEach(app => {
+      const cat = app.category || 'custom';
+      if (grouped[cat]) {
+        grouped[cat].push(app);
+      } else {
+        grouped['custom'].push(app);
+      }
+    });
+
+    // Render grouped layout
+    Object.keys(CATEGORIES).forEach(catKey => {
+      const catApps = grouped[catKey];
+      if (catApps && catApps.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'grid-category-header';
+        header.innerHTML = `<span class="grid-category-icon">${CATEGORIES[catKey].svg}</span> ${CATEGORIES[catKey].name}`;
+        grid.appendChild(header);
+
+        catApps.forEach(app => {
+          const card = document.createElement('div');
+          
+          const isTweak = app.id.startsWith('Opt.');
+          const isInstalled = !isTweak && !!app.alreadyInstalled;
+          const isApplied = isTweak && !!app.alreadyApplied;
+
+          let cardClass = 'app-card';
+          if (isInstalled) cardClass += ' already-installed';
+          if (isApplied) cardClass += ' already-applied';
+          if (selected.has(app.id)) cardClass += ' selected';
+          
+          card.className = cardClass;
+          card.dataset.id = app.id;
+          
+          const delay = Math.min(animIndex * 0.02, 0.4);
+          card.style.animationDelay = `${delay}s`;
+          animIndex++;
+
+          let actionHtml = '';
+          if (isInstalled) {
+            actionHtml = `<div class="app-checkbox" style="background: rgba(223, 183, 67, 0.12); border-color: rgba(223, 183, 67, 0.4); color: var(--accent); font-size: 9px; width: auto; padding: 2px 6px; height: auto; border-radius: 4px; font-weight: 600; font-family: sans-serif;">INSTALLED</div>`;
+          } else if (isApplied) {
+            const canRevert = REVERSIBLE_TWEAKS.has(app.id);
+            const revertHtml = canRevert 
+              ? `<button class="revert-btn" onclick="event.stopPropagation(); triggerRevertTweak('${app.id}', '${app.name}')">Revert</button>` 
+              : '';
+            
+            const isSel = selected.has(app.id);
+            actionHtml = `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                ${revertHtml}
+                ${isSel 
+                  ? `<div class="app-checkbox" style="background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 0 8px var(--accent-glow);">✓</div>`
+                  : `<div class="app-checkbox" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.4); color: var(--success); font-size: 9px; width: auto; padding: 2px 6px; height: auto; border-radius: 4px; font-weight: 600; font-family: sans-serif;">APPLIED</div>`
+                }
+              </div>
+            `;
+          } else {
+            actionHtml = selected.has(app.id)
+              ? `<div class="app-checkbox" style="background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 0 8px var(--accent-glow);">✓</div>`
+              : `<div class="app-checkbox">✓</div>`;
+          }
+
+          card.innerHTML = `
+            <div class="app-card-inner">
+              <img class="app-icon-img" src="assets/icons/${app.id.replace(/\./g, '-')}.svg" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg viewBox=\'0 0 24 24\' fill=\'%23000000\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M20 4.5 12 1 4 4.5v15L12 23l8-3.5v-15zM12 3.25l6.5 2.844L12 8.938 5.5 6.094 12 3.25zm-6.5 4.5 5.5 2.406v10.688l-5.5-2.406V7.75zm7.5 13.094V10.156l5.5-2.406v10.688l-5.5 2.406z\'/></svg>'" alt="${app.name}" />
+              <div class="app-info">
+                <div class="app-name">${app.name}</div>
+                <div class="app-desc">${app.desc}</div>
+              </div>
+              ${actionHtml}
+            </div>
+          `;
+          card.onclick = () => toggleApp(app.id);
+          grid.appendChild(card);
+        });
+      }
+    });
+
+    updateCount();
+  }
+
+  function toggleApp(id) {
+    const app = APPS.find(a => a.id === id);
+    if (app && app.alreadyInstalled) return;
+    if (selected.has(id)) selected.delete(id);
+    else selected.add(id);
+    renderGrid();
+  }
+
+  function updateCount() {
+    let appCount = 0;
+    let optCount = 0;
+    selected.forEach(id => {
+      if (id.startsWith('Opt.')) optCount++;
+      else appCount++;
+    });
+    
+    let text = '';
+    if (appCount > 0 && optCount > 0) {
+      text = `<span>${appCount}</span> app${appCount > 1 ? 's' : ''} and <span>${optCount}</span> tweak${optCount > 1 ? 's' : ''} selected`;
+    } else if (appCount > 0) {
+      text = `<span>${appCount}</span> app${appCount > 1 ? 's' : ''} selected`;
+    } else if (optCount > 0) {
+      text = `<span>${optCount}</span> tweak${optCount > 1 ? 's' : ''} selected`;
+    } else {
+      text = '<span>0</span> items selected';
+    }
+    
+    document.getElementById('selected-count').innerHTML = text;
+    document.getElementById('install-btn').disabled = selected.size === 0;
+  }
+
+  function updatePresetCounts() {
+    const countAllPill = document.getElementById('count-all');
+    if (countAllPill) {
+      countAllPill.textContent = APPS.length;
+    }
+    
+    const countInstalledPill = document.getElementById('count-installed');
+    if (countInstalledPill) {
+      countInstalledPill.textContent = APPS.filter(app => !app.id.startsWith('Opt.') && app.alreadyInstalled).length;
+    }
+    
+    Object.keys(CATEGORIES).forEach(key => {
+      const pill = document.getElementById(`count-${key}`);
+      if (pill) {
+        pill.textContent = APPS.filter(app => app.category === key).length;
+      }
+    });
+  }
+
+  let systemInfoCached = null;
+
+  async function loadSystemInfo() {
+    if (systemInfoCached) {
+      displaySystemInfo(systemInfoCached);
+      return;
+    }
+    
+    document.getElementById('sys-cpu').textContent = 'Fetching processor specs...';
+    document.getElementById('sys-gpu').textContent = 'Scanning display adapters...';
+    document.getElementById('sys-ram').textContent = 'Measuring capacity...';
+    document.getElementById('sys-storage').textContent = 'Reading storage statistics...';
+    document.getElementById('sys-os').textContent = 'Querying operating system...';
+    
+    const securityEl = document.getElementById('sys-security');
+    if (securityEl) securityEl.textContent = 'Verifying security settings...';
+    
+    try {
+      const info = await invoke('get_system_info');
+      systemInfoCached = info;
+      displaySystemInfo(info);
+    } catch (e) {
+      console.error('Failed to get system info', e);
+      const errMsg = 'Failed to load details. Click to retry.';
+      document.getElementById('sys-cpu').textContent = errMsg;
+      document.getElementById('sys-gpu').textContent = errMsg;
+      document.getElementById('sys-ram').textContent = errMsg;
+      document.getElementById('sys-storage').textContent = errMsg;
+      document.getElementById('sys-os').textContent = errMsg;
+      
+      const secEl = document.getElementById('sys-security');
+      if (secEl) secEl.textContent = '';
+    }
+  }
+
+  function displaySystemInfo(info) {
+    document.getElementById('sys-cpu').textContent = info.cpu || 'Unknown';
+    document.getElementById('sys-gpu').textContent = info.gpu || 'Unknown';
+    document.getElementById('sys-ram').textContent = info.ram || 'Unknown';
+    
+    const storageEl = document.getElementById('sys-storage');
+    if (storageEl) {
+      storageEl.innerHTML = info.storage ? info.storage.replace(/\n/g, '<br>') : 'Unknown';
+    }
+    
+    document.getElementById('sys-os').textContent = info.os || 'Unknown';
+    
+    const securityEl = document.getElementById('sys-security');
+    if (securityEl) {
+      securityEl.innerHTML = `TPM Status: <span style="color: var(--accent); font-weight: 600;">${info.tpm || 'Unknown'}</span> &nbsp;|&nbsp; Secure Boot: <span style="color: var(--accent); font-weight: 600;">${info.secureBoot || 'Unknown'}</span>`;
+    }
+  }
+
+  function setupSystemInfoEvents() {
+    const cards = ['cpu', 'gpu', 'ram', 'storage', 'os'];
+    cards.forEach(id => {
+      const el = document.getElementById('card-' + id);
+      if (el) {
+        el.style.cursor = 'pointer';
+        el.onclick = () => {
+          systemInfoCached = null;
+          loadSystemInfo();
+        };
+      }
+    });
+  }
+
+  window.loadPreset = function(key) {
+    activePreset = key;
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    
+    const btn = document.getElementById('preset-' + key);
+    if (btn) btn.classList.add('active');
+    
+    const appGrid = document.getElementById('app-grid');
+    const sysInfoView = document.getElementById('sys-info-view');
+    const headerActions = document.querySelector('.header-actions');
+    const footer = document.querySelector('.footer');
+    
+    if (key === 'sysinfo') {
+      appGrid.style.display = 'none';
+      if (sysInfoView) {
+        sysInfoView.style.display = 'flex';
+      }
+      if (headerActions) headerActions.style.display = 'none';
+      if (footer) footer.style.display = 'none';
+      document.getElementById('content-title').textContent = 'My PC Specs';
+      loadSystemInfo();
+      setupSystemInfoEvents();
+    } else {
+      appGrid.style.display = 'grid';
+      if (sysInfoView) {
+        sysInfoView.style.display = 'none';
+      }
+      if (headerActions) headerActions.style.display = 'flex';
+      if (footer) footer.style.display = 'flex';
+      
+      let titleText = 'All Apps & Tweaks';
+      if (key === 'all') {
+        titleText = 'All Apps & Tweaks';
+      } else if (key === 'installed') {
+        titleText = 'Installed Apps';
+      } else if (CATEGORIES[key]) {
+        titleText = CATEGORIES[key].name;
+      }
+      document.getElementById('content-title').textContent = titleText;
+      renderGrid();
+    }
+  };
+
+  window.applyFreshWindowsPreset = function() {
+    selected.clear();
+    
+    // Select all Opt.* items
+    APPS.forEach(app => {
+      if (app.id.startsWith('Opt.')) {
+        selected.add(app.id);
+      }
+    });
+    
+    // Select essential apps
+    const essentials = [
+      'Google.Chrome',
+      'Microsoft.VisualStudioCode',
+      'Git.Git',
+      'Discord.Discord',
+      '7zip.7zip',
+      'VideoLAN.VLC',
+      'Voidtools.Everything',
+      'Microsoft.PowerToys'
+    ];
+    
+    essentials.forEach(id => {
+      if (APPS.some(a => a.id === id)) {
+        selected.add(id);
+      }
+    });
+    
+    // Switch to 'all' preset view to show all selections
+    loadPreset('all');
+    
+    // Flash button effect
+    const btn = document.getElementById('preset-fresh');
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.boxShadow = '0 0 16px var(--accent-glow)';
+    setTimeout(() => {
+      btn.style.borderColor = '';
+      btn.style.boxShadow = '';
+    }, 500);
+  };
+
+  window.toggleSelectAll = function() {
+    const filtered = getFilteredApps();
+    const allSelected = filtered.every(app => selected.has(app.id));
+    if (allSelected) {
+      filtered.forEach(app => selected.delete(app.id));
+    } else {
+      filtered.forEach(app => selected.add(app.id));
+    }
+    renderGrid();
+  };
+
+  window.handleSearch = function(val) {
+    searchQuery = val.toLowerCase();
+    renderGrid();
+  };
+
+  window.addCustomApp = function() {
+    const idInput = document.getElementById('custom-id-input');
+    const nameInput = document.getElementById('custom-name-input');
+    const id = idInput.value.trim();
+    const name = nameInput.value.trim();
+    
+    if (!id || !name) {
+      alert('Please fill in both the Winget ID and Display Name.');
+      return;
+    }
+    
+    if (APPS.some(a => a.id.toLowerCase() === id.toLowerCase())) {
+      alert('This Winget ID already exists in the list!');
+      return;
+    }
+    
+    const newApp = {
+      id,
+      name,
+      emoji: '📦',
+      desc: 'Custom Winget App',
+      tags: ['custom'],
+      category: 'custom'
+    };
+    
+    APPS.push(newApp);
+    saveCustomApps();
+    selected.add(id);
+    
+    idInput.value = '';
+    nameInput.value = '';
+    
+    updatePresetCounts();
+    window.loadPreset('none');
+  };
+
+  const SVG_ICONS = {
+    pending: `<svg class="progress-svg text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+    installing: `<svg class="progress-svg checking-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`,
+    done: `<svg class="progress-svg text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+    error: `<svg class="progress-svg text-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
+    skipped: `<svg class="progress-svg text-dim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>`
+  };
+
+  window.startInstall = async function() {
+    const appsToInstall = APPS.filter(a => selected.has(a.id));
+    const total = appsToInstall.length;
+    let done = 0;
+
+    document.getElementById('progress-overlay').classList.add('active');
+    document.getElementById('progress-list').innerHTML = '';
+    document.getElementById('done-btn').classList.remove('visible');
+    document.getElementById('copy-report-btn').style.display = 'none';
+    document.getElementById('progress-subtitle').textContent = 'Please keep this window open';
+    document.getElementById('progress-bar').style.width = '0%';
+    document.getElementById('progress-percent').textContent = '0%';
+    document.getElementById('progress-label').textContent = `Checking requirements...`;
+
+    // Pre-populate list
+    appsToInstall.forEach(app => {
+      const item = document.createElement('div');
+      item.className = 'progress-item';
+      item.id = 'progress-' + app.id.replace(/\./g, '-');
+      item.innerHTML = `
+        <div class="progress-item-main">
+          <span class="progress-status">${SVG_ICONS.pending}</span>
+          <span style="font-weight: 500;">${app.name}</span>
+        </div>
+      `;
+      document.getElementById('progress-list').appendChild(item);
+    });
+
+    const unlistenProgress = await listen('install_progress', (event) => {
+      const { app_id, app_name, status, message } = event.payload;
+      const safeId = 'progress-' + app_id.replace(/\./g, '-');
+      const item = document.getElementById(safeId);
+      if (!item) return;
+
+      const icons = { 
+        installing: SVG_ICONS.installing, 
+        done: SVG_ICONS.done, 
+        error: SVG_ICONS.error, 
+        skipped: SVG_ICONS.skipped 
+      };
+      
+      item.className = 'progress-item ' + status;
+      
+      let detailHtml = '';
+      if (status === 'error') {
+        detailHtml = `<div class="progress-detail">${message}</div>`;
+      }
+      
+      item.innerHTML = `
+        <div class="progress-item-main">
+          <span class="progress-status">${icons[status] || SVG_ICONS.pending}</span>
+          <span style="font-weight: 500;">${app_name}</span>
+          <span style="margin-left: auto; font-size: 11px; color: var(--text-dim);">${status.toUpperCase()}</span>
+        </div>
+        ${detailHtml}
+      `;
+
+      if (status === 'done' || status === 'error' || status === 'skipped') {
+        done++;
+        const pct = Math.round((done / total) * 100);
+        document.getElementById('progress-bar').style.width = pct + '%';
+        document.getElementById('progress-percent').textContent = pct + '%';
+        document.getElementById('progress-label').textContent = `${done} of ${total} complete`;
+      }
+    });
+
+    const unlistenComplete = await listen('install_complete', () => {
+      document.getElementById('progress-subtitle').textContent = 'All operations complete! 🎉';
+      document.getElementById('done-btn').classList.add('visible');
+      document.getElementById('copy-report-btn').style.display = 'block';
+      
+      // Clean up event listeners
+      unlistenProgress();
+      unlistenComplete();
+    });
+
+    await invoke('install_apps', {
+      apps: appsToInstall.map(a => ({ id: a.id, name: a.name }))
+    });
+  };
+
+  async function checkInstalled() {
+    try {
+      const installedList = await invoke('get_installed_apps');
+      const installedSet = new Set(installedList);
+      
+      APPS.forEach(app => {
+        if (app.id.startsWith('Opt.')) return;
+        
+        if (installedSet.has(app.id) || 
+            installedSet.has(app.id.split('.').pop()) ||
+            installedSet.has(app.name)) {
+          app.alreadyInstalled = true;
+        } else {
+          app.alreadyInstalled = false;
+        }
+      });
+      
+      renderGrid();
+      updatePresetCounts();
+    } catch (e) {
+      console.error('Failed to check installed apps', e);
+    }
+  }
+
+  async function checkAppliedTweaks() {
+    try {
+      const appliedList = await invoke('get_applied_tweaks');
+      const appliedSet = new Set(appliedList);
+      
+      APPS.forEach(app => {
+        if (!app.id.startsWith('Opt.')) return;
+        
+        if (appliedSet.has(app.id)) {
+          app.alreadyApplied = true;
+        } else {
+          app.alreadyApplied = false;
+        }
+      });
+      
+      renderGrid();
+      updatePresetCounts();
+    } catch (e) {
+      console.error('Failed to check applied tweaks', e);
+    }
+  }
+
+  window.triggerRevertTweak = async function(id, name) {
+    document.getElementById('progress-overlay').classList.add('active');
+    document.getElementById('progress-list').innerHTML = '';
+    document.getElementById('done-btn').classList.remove('visible');
+    document.getElementById('copy-report-btn').style.display = 'none';
+    document.getElementById('progress-subtitle').textContent = 'Please keep this window open';
+    document.getElementById('progress-bar').style.width = '0%';
+    document.getElementById('progress-percent').textContent = '0%';
+    document.getElementById('progress-label').textContent = `Reverting...`;
+
+    // Pre-populate list
+    const item = document.createElement('div');
+    item.className = 'progress-item';
+    item.id = 'progress-' + id.replace(/\./g, '-');
+    item.innerHTML = `
+      <div class="progress-item-main">
+        <span class="progress-status">${SVG_ICONS.pending}</span>
+        <span style="font-weight: 500;">${name}</span>
+      </div>
+    `;
+    document.getElementById('progress-list').appendChild(item);
+
+    const unlistenProgress = await listen('install_progress', (event) => {
+      const { app_id, app_name, status, message } = event.payload;
+      const safeId = 'progress-' + app_id.replace(/\./g, '-');
+      const item = document.getElementById(safeId);
+      if (!item) return;
+
+      const icons = { 
+        installing: SVG_ICONS.installing, 
+        done: SVG_ICONS.done, 
+        error: SVG_ICONS.error, 
+        skipped: SVG_ICONS.skipped 
+      };
+      
+      item.className = 'progress-item ' + status;
+      
+      let detailHtml = '';
+      if (status === 'error') {
+        detailHtml = `<div class="progress-detail">${message}</div>`;
+      }
+      
+      item.innerHTML = `
+        <div class="progress-item-main">
+          <span class="progress-status">${icons[status] || SVG_ICONS.pending}</span>
+          <span style="font-weight: 500;">${app_name}</span>
+          <span style="margin-left: auto; font-size: 11px; color: var(--text-dim);">${status.toUpperCase()}</span>
+        </div>
+        ${detailHtml}
+      `;
+
+      if (status === 'done' || status === 'error' || status === 'skipped') {
+        document.getElementById('progress-bar').style.width = '100%';
+        document.getElementById('progress-percent').textContent = '100%';
+        document.getElementById('progress-label').textContent = `Revert complete`;
+      }
+    });
+
+    const unlistenComplete = await listen('install_complete', () => {
+      document.getElementById('progress-subtitle').textContent = 'Reversal complete! 🎉';
+      document.getElementById('done-btn').classList.add('visible');
+      
+      // Clean up event listeners
+      unlistenProgress();
+      unlistenComplete();
+    });
+
+    try {
+      await invoke('revert_tweak', { id, name });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  window.copyReport = function() {
+    let reportLines = [];
+    reportLines.push("WinForge Installation Summary");
+    reportLines.push("============================");
+    
+    const appsToInstall = APPS.filter(a => selected.has(a.id));
+    
+    appsToInstall.forEach(app => {
+      const safeId = 'progress-' + app.id.replace(/\./g, '-');
+      const item = document.getElementById(safeId);
+      if (item) {
+        let emoji = '⏳';
+        let status = 'Pending';
+        if (item.classList.contains('done')) {
+          emoji = '✅';
+          status = 'Installed successfully';
+        } else if (item.classList.contains('error')) {
+          emoji = '❌';
+          status = 'Failed';
+          const detail = item.querySelector('.progress-detail');
+          if (detail) {
+            status += ` - ${detail.innerText.trim()}`;
+          }
+        } else if (item.classList.contains('skipped')) {
+          emoji = '⏭️';
+          status = 'Already installed (Skipped)';
+        }
+        reportLines.push(`${emoji} ${app.name}: ${status}`);
+      }
+    });
+    
+    const fullReport = reportLines.join('\n');
+    navigator.clipboard.writeText(fullReport).then(() => {
+      const btn = document.getElementById('copy-report-btn');
+      const original = btn.innerText;
+      btn.innerText = 'Copied!';
+      setTimeout(() => { btn.innerText = original; }, 2000);
+    }).catch(e => {
+      console.error(e);
+      alert('Could not copy report to clipboard');
+    });
+  };
+
+  window.resetApp = function() {
+    document.getElementById('progress-overlay').classList.remove('active');
+    selected.clear();
+    checkInstalled();
+    checkAppliedTweaks();
+    loadPreset('all');
+  };
+
+  window.closeApp = function() { invoke('close_window'); };
+  window.minimize = function() { invoke('minimize_window'); };
+  window.toggleMaximize = function() { invoke('toggle_maximize_window'); };
+
+  // Window size and maximized state listener
+  async function updateWindowState() {
+    if (hasTauri) {
+      try {
+        const isMax = await window.__TAURI__.window.getCurrent().isMaximized();
+        const appEl = document.getElementById('app');
+        const maxBtn = document.getElementById('maximize-btn');
+        if (isMax) {
+          appEl.classList.add('maximized');
+          maxBtn.innerHTML = '&#10697;'; // Restore icon (⧉)
+        } else {
+          appEl.classList.remove('maximized');
+          maxBtn.innerHTML = '&#9634;'; // Maximize icon (▢)
+        }
+      } catch(e) {}
+    }
+  }
+
+  window.addEventListener('resize', updateWindowState);
+
+  // "/" shortcut to focus search bar
+  window.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== document.getElementById('search-input') && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+  });
+
+  // Init
+  loadCustomApps();
+  checkAdmin();
+  checkInstalled();
+  checkAppliedTweaks();
+  loadPreset('all');
+  updateWindowState();
+</script>
+</body>
+</html>
